@@ -71,7 +71,7 @@ class GaussianNaiveBayes(BaseModel):
                 for feature_index in np.arange(self.features_num):
                     loc = self.model[class_name][feature_index]['mean']
                     scale = self.model[class_name][feature_index]['variance']
-                    # self.distibution.pdf(x[feature_index], loc=loc, scale=scale)
+
                     feature_probability = - 0.5 * np.sum(np.log(2. * np.pi * scale))
                     feature_probability -= 0.5 * ((x[feature_index] - loc) ** 2) / (scale)
                     class_probability += feature_probability
