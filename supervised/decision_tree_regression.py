@@ -3,7 +3,7 @@ import numpy as np
 from .base import BaseModel
 
 CATEGORICAL_CONST = 100
-BINS_NUMBER = 1000000
+BINS_NUMBER = 100
 
 NUMERICAL_KEY = 'numerical'
 CATEGORICAL_KEY = 'categorical'
@@ -16,6 +16,7 @@ class DecisionTreeRegressor(BaseModel):
         leaves_num=10, 
         min_impurity_decrease=0, 
         max_objects_in_leaf_num=-1,
+        use_binning=True,
         verbose=False
     ):
         super(DecisionTreeRegressor, self).__init__(verbose)
@@ -24,6 +25,7 @@ class DecisionTreeRegressor(BaseModel):
         self.leaves_num = leaves_num
         self.min_impurity_decrease = min_impurity_decrease
         self.max_objects_in_leaf_num = max_objects_in_leaf_num
+        self.use_binning = use_binning
 
         self._features_types = []
         self._features_num = 0
@@ -72,7 +74,7 @@ class DecisionTreeRegressor(BaseModel):
             if self._features_types[j] == NUMERICAL_KEY:
                 # hack to solve problems with binning when we
                 # have a small number of objects
-                if len(np.unique(X[:,j])) > BINS_NUMBER * 2:
+                if  self.use_binning and len(np.unique(X[:,j])) > BINS_NUMBER * 10:
                     bins = np.linspace(min(X[:,j]), max(X[:,j]), BINS_NUMBER)
                     digitized = np.digitize(X[:,j], bins)
                     bin_means = [X[:,j][digitized == i].mean() for i in range(1, len(bins))]
