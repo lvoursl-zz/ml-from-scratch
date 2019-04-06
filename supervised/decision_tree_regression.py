@@ -3,7 +3,7 @@ import numpy as np
 from .base import BaseModel
 
 CATEGORICAL_CONST = 100
-BINS_NUMBER = 3
+BINS_NUMBER = 1000000
 
 NUMERICAL_KEY = 'numerical'
 CATEGORICAL_KEY = 'categorical'
@@ -40,7 +40,6 @@ class DecisionTreeRegressor(BaseModel):
                 # self._features_types.append(CATEGORICAL_KEY)
                 self._features_types.append(NUMERICAL_KEY)
             else:
-                # TODO: realize categorical features
                 self._features_types.append(NUMERICAL_KEY)
 
     def _get_left_child_index(self, parent_index):
@@ -71,19 +70,27 @@ class DecisionTreeRegressor(BaseModel):
 
         for j in range(self._features_num):
             if self._features_types[j] == NUMERICAL_KEY:
-                bins = np.linspace(min(X[:,j]), max(X[:,j]), BINS_NUMBER)
-                digitized = np.digitize(X[:,j], bins)
-                bin_means = [X[:,j][digitized == i].mean() for i in range(1, len(bins))]
+                # hack to solve problems with binning when we
+                # have a small number of objects
+                if len(np.unique(X[:,j])) > BINS_NUMBER * 2:
+                    bins = np.linspace(min(X[:,j]), max(X[:,j]), BINS_NUMBER)
+                    digitized = np.digitize(X[:,j], bins)
+                    bin_means = [X[:,j][digitized == i].mean() for i in range(1, len(bins))]
+                else:
+                    bin_means = np.unique(X[:,j])
 
                 for bin_value in bin_means:
-                    left_indexes = np.where(X[:,j] < bin_value)
-                    right_indexes = np.where(X[:,j] >= bin_value)
+                    left_indexes = np.where(X[:,j] < bin_value)[0]
+                    right_indexes = np.where(X[:,j] >= bin_value)[0]
+
+                    if (len(left_indexes) == 0) or (len(right_indexes) == 0):
+                        continue
 
                     parent_criterion = self._impurity_criterion(y)
                     left_criterion = self._impurity_criterion(y[left_indexes])
                     right_criterion = self._impurity_criterion(y[right_indexes])
 
-                    if parent_criterion == 0:
+                    if parent_criterion < 1e-10:
                         is_leaf = True
                         decision = np.mean(y)
                         return -1, -1, -1, -1, is_leaf, decision
@@ -126,6 +133,19 @@ class DecisionTreeRegressor(BaseModel):
 
         return available_nodes
 
+    def _make_leaf(self, node_index, X, y):
+        parent_index = int(node_index / 2)
+
+        if (node_index - parent_index) == 1:
+            samples_indexes = self._tree[parent_index]['left_indexes']
+        elif (node_index - parent_index) == 2:
+            samples_indexes = self._tree[parent_index]['right_indexes']
+        else:
+            raise Exception('problems with indexes in tree', node_index, parent_index)
+
+        self._tree[parent_index]['is_leaf'] = True
+        self._tree[parent_index]['decision'] = np.mean(y[samples_indexes])
+
     def fit(self, X, y):
         self._check_dimensions(X, y)
         self._infer_features_types(X)
@@ -146,29 +166,48 @@ class DecisionTreeRegressor(BaseModel):
 
         while len(available_nodes) != 0:
             for node_index in available_nodes:
+                # if np.log2(node_index) > self.max_depth:
+                #     self._make_leaf(node_index, X, y)
+                #     continue
+
                 parent_left_indexes = self._tree[node_index]['left_indexes']
                 parent_right_indexes = self._tree[node_index]['right_indexes']
-                
+
+                mapping = {i: parent_left_indexes[i] for i in range(len(parent_left_indexes))}
+
                 split_feature_index, split_feature_value, left_indexes, right_indexes, \
                     is_leaf, decision = self._get_split(X[parent_left_indexes], y[parent_left_indexes])
+
+                if not type(left_indexes) is int and not type(right_indexes) is int:
+                    left_indexes_mapped= [mapping[i] for i in left_indexes]
+                    right_indexes_mapped = [mapping[i] for i in right_indexes]
 
                 self._tree[self._get_left_child_index(node_index)] = {
                     'split_feature_index': split_feature_index,
                     'split_feature_value': split_feature_value, 
-                    'left_indexes': left_indexes, 
-                    'right_indexes': right_indexes, 
+                    'left_indexes': left_indexes_mapped, 
+                    'right_indexes': right_indexes_mapped, 
                     'is_leaf': is_leaf,
                     'decision': decision
                 }
 
+                mapping = {i: parent_right_indexes[i] for i in range(len(parent_right_indexes))}
+
                 split_feature_index, split_feature_value, left_indexes, right_indexes, \
                     is_leaf, decision = self._get_split(X[parent_right_indexes], y[parent_right_indexes])
+
+                if not type(left_indexes) is int and not type(right_indexes) is int:
+                    left_indexes_mapped = [mapping[i] for i in left_indexes]
+                    right_indexes_mapped = [mapping[i] for i in right_indexes]
+                else:
+                    left_indexes_mapped = left_indexes
+                    right_indexes_mapped = right_indexes
 
                 self._tree[self._get_right_child_index(node_index)] = {
                     'split_feature_index': split_feature_index,
                     'split_feature_value': split_feature_value, 
-                    'left_indexes': left_indexes, 
-                    'right_indexes': right_indexes, 
+                    'left_indexes': left_indexes_mapped, 
+                    'right_indexes': right_indexes_mapped, 
                     'is_leaf': is_leaf,
                     'decision': decision
                 }
