@@ -183,6 +183,9 @@ class DecisionTreeRegressor(BaseModel):
                 if not type(left_indexes) is int and not type(right_indexes) is int:
                     left_indexes_mapped= [mapping[i] for i in left_indexes]
                     right_indexes_mapped = [mapping[i] for i in right_indexes]
+                else:
+                    left_indexes_mapped = left_indexes
+                    right_indexes_mapped = right_indexes
 
                 self._tree[self._get_left_child_index(node_index)] = {
                     'split_feature_index': split_feature_index,
