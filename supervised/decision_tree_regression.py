@@ -3,7 +3,7 @@ import numpy as np
 from .base import BaseModel
 
 CATEGORICAL_CONST = 100
-BINS_NUMBER = 10
+BINS_NUMBER = 3
 
 NUMERICAL_KEY = 'numerical'
 CATEGORICAL_KEY = 'categorical'
@@ -59,16 +59,21 @@ class DecisionTreeRegressor(BaseModel):
 
     def _get_split(self, X, y):
         split_feature_index, split_feature_value = -1, -1
-        left_indexes, right_indexes = [], []
+        final_left_indexes, final_right_indexes = [], []
         is_leaf, decision = False, None
 
         best_criterion_value = -1
 
+        if X.shape[0] < self.max_objects_in_leaf_num:
+            is_leaf = True
+            decision = np.mean(y)
+            return -1, -1, -1, -1, is_leaf, decision
+
         for j in range(self._features_num):
             if self._features_types[j] == NUMERICAL_KEY:
                 bins = np.linspace(min(X[:,j]), max(X[:,j]), BINS_NUMBER)
-                digitized = np.digitize(X, bins)
-                bin_means = [X[digitized == i].mean() for i in range(1, len(bins))]
+                digitized = np.digitize(X[:,j], bins)
+                bin_means = [X[:,j][digitized == i].mean() for i in range(1, len(bins))]
 
                 for bin_value in bin_means:
                     left_indexes = np.where(X[:,j] < bin_value)
@@ -94,11 +99,18 @@ class DecisionTreeRegressor(BaseModel):
                         split_feature_index = j
                         split_feature_value = bin_value
 
+                        final_left_indexes = left_indexes
+                        final_right_indexes = right_indexes
+
             else:
                 raise NotImplementedError()
 
+        if best_criterion_value == -1:
+            is_leaf = True
+            decision = np.mean(y)
+            return -1, -1, -1, -1, is_leaf, decision
         
-        return split_feature_index, split_feature_value, left_indexes, right_indexes, \
+        return split_feature_index, split_feature_value, final_left_indexes, final_right_indexes, \
             is_leaf, decision
 
     def _get_available_nodes(self):
@@ -164,4 +176,25 @@ class DecisionTreeRegressor(BaseModel):
             available_nodes = self._get_available_nodes()
 
     def predict(self, X):
-        pass
+        if len(X.shape) == 1:
+            X = [X]
+
+        predictions = []
+        for x in X:
+            current_node_index = 0
+            current_node = self._tree[current_node_index]
+
+            while current_node['is_leaf'] != True:
+                split_feature_index = current_node['split_feature_index']
+                split_feature_value = current_node['split_feature_value']
+
+                if x[split_feature_index] >= split_feature_value:
+                    current_node_index = self._get_right_child_index(current_node_index)
+                else:
+                    current_node_index = self._get_left_child_index(current_node_index)
+                
+                current_node = self._tree[current_node_index]
+
+            predictions.append(current_node['decision'])
+        
+        return predictions
