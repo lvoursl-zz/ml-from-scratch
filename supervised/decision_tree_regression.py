@@ -2,6 +2,7 @@ import numpy as np
 
 from .base import BaseModel
 
+EPSILON = 1e-10
 CATEGORICAL_CONST = 100
 BINS_NUMBER = 100
 
@@ -92,7 +93,8 @@ class DecisionTreeRegressor(BaseModel):
                     left_criterion = self._impurity_criterion(y[left_indexes])
                     right_criterion = self._impurity_criterion(y[right_indexes])
 
-                    if parent_criterion < 1e-10:
+                    if parent_criterion < EPSILON:
+                        # if variance of parent is equal to zero
                         is_leaf = True
                         decision = np.mean(y)
                         return -1, -1, -1, -1, is_leaf, decision
@@ -135,18 +137,12 @@ class DecisionTreeRegressor(BaseModel):
 
         return available_nodes
 
-    def _make_leaf(self, node_index, X, y):
-        parent_index = int(node_index / 2)
+    def _make_leaf(self, node_index, y):
+        samples_indexes = self._tree[node_index]['left_indexes']
+        samples_indexes = np.append(samples_indexes, self._tree[node_index]['right_indexes'])
 
-        if (node_index - parent_index) == 1:
-            samples_indexes = self._tree[parent_index]['left_indexes']
-        elif (node_index - parent_index) == 2:
-            samples_indexes = self._tree[parent_index]['right_indexes']
-        else:
-            raise Exception('problems with indexes in tree', node_index, parent_index)
-
-        self._tree[parent_index]['is_leaf'] = True
-        self._tree[parent_index]['decision'] = np.mean(y[samples_indexes])
+        self._tree[node_index]['is_leaf'] = True
+        self._tree[node_index]['decision'] = np.mean(y[samples_indexes])
 
     def fit(self, X, y):
         self._check_dimensions(X, y)
@@ -168,9 +164,10 @@ class DecisionTreeRegressor(BaseModel):
 
         while len(available_nodes) != 0:
             for node_index in available_nodes:
-                # if np.log2(node_index) > self.max_depth:
-                #     self._make_leaf(node_index, X, y)
-                #     continue
+                # using epsilon to overcome numerical problems
+                if np.log2(node_index + EPSILON) + 1 >= self.max_depth:
+                    self._make_leaf(node_index, y)
+                    continue
 
                 parent_left_indexes = self._tree[node_index]['left_indexes']
                 parent_right_indexes = self._tree[node_index]['right_indexes']
