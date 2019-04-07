@@ -14,19 +14,23 @@ class DecisionTreeRegressor(BaseModel):
         self, 
         criterion='mse', 
         max_depth=5, 
-        leaves_num=10, 
-        min_impurity_decrease=0, 
+        leafs_num=-1, 
         max_objects_in_leaf_num=-1,
+        min_impurity_decrease=0, 
         use_binning=True,
         verbose=False
     ):
         super(DecisionTreeRegressor, self).__init__(verbose)
         self.criterion = criterion
         self.max_depth = max_depth
-        self.leaves_num = leaves_num
-        self.min_impurity_decrease = min_impurity_decrease
         self.max_objects_in_leaf_num = max_objects_in_leaf_num
+        self.min_impurity_decrease = min_impurity_decrease        
         self.use_binning = use_binning
+        
+        if leafs_num != -1:
+            self.leafs_num = leafs_num
+        else:
+            self.leafs_num = (max_depth + 1) ** 2        
 
         self._features_types = []
         self._features_num = 0
@@ -120,6 +124,11 @@ class DecisionTreeRegressor(BaseModel):
             is_leaf = True
             decision = np.mean(y)
             return -1, -1, -1, -1, is_leaf, decision
+
+        if best_criterion_value <= (self.min_impurity_decrease + EPSILON):
+            is_leaf = True
+            decision = np.mean(y)
+            return -1, -1, -1, -1, is_leaf, decision            
         
         return split_feature_index, split_feature_value, final_left_indexes, final_right_indexes, \
             is_leaf, decision
@@ -143,6 +152,13 @@ class DecisionTreeRegressor(BaseModel):
 
         self._tree[node_index]['is_leaf'] = True
         self._tree[node_index]['decision'] = np.mean(y[samples_indexes])
+
+    def _count_leafs(self):
+        count = 0
+        for node_index, node_data in self._tree.items():
+            if node_data['is_leaf']:
+                count += 1
+        return count
 
     def fit(self, X, y):
         self._check_dimensions(X, y)
@@ -168,6 +184,11 @@ class DecisionTreeRegressor(BaseModel):
                 if np.log2(node_index + EPSILON) + 1 >= self.max_depth:
                     self._make_leaf(node_index, y)
                     continue
+
+                if self._count_leafs() >= self.leafs_num:
+                    for candidate_node in available_nodes:
+                        self._make_leaf(candidate_node, y)
+                    break
 
                 parent_left_indexes = self._tree[node_index]['left_indexes']
                 parent_right_indexes = self._tree[node_index]['right_indexes']
