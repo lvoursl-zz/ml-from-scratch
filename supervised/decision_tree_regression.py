@@ -156,7 +156,10 @@ class DecisionTreeRegressor(BaseModel):
     def _count_leafs(self):
         count = 0
         for node_index, node_data in self._tree.items():
-            if node_data['is_leaf']:
+            if (
+                self._get_left_child_index(node_index) not in self._tree and
+                self._get_right_child_index(node_index) not in self._tree
+            ):
                 count += 1
         return count
 
