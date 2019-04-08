@@ -14,13 +14,13 @@ class DecisionTreeClassifier(DecisionTreeBase):
         verbose=False
     ):
         super(DecisionTreeClassifier, self).__init__(
-            criterion,
-            max_depth,
-            leafs_num,
-            max_objects_in_leaf_num,
-            min_impurity_decrease,
-            use_binning,
-            verbose
+            criterion=criterion,
+            max_depth=max_depth,
+            leafs_num= leafs_num,
+            max_objects_in_leaf_num=max_objects_in_leaf_num,
+            min_impurity_decrease=min_impurity_decrease,
+            use_binning=use_binning,
+            verbose=verbose
         )
 
     def _impurity_criterion(self, y):

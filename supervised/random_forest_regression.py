@@ -41,18 +41,14 @@ class RandomForestRegressor(BaseModel):
 
         # make it parallel!
         for i in range(self.n_estimators):
-            print('iteration #', i)
             samples_indexes = sorted(np.random.choice(
                 np.arange(X.shape[0]), int(X.shape[0] * self.subsample), replace=True
             ))
             columns_indexes = sorted(np.random.choice(
                 np.arange(X.shape[1]), int(X.shape[1] * self.col_subsample), replace=False
             ))
-            # problems with col sampling
-            print(columns_indexes)
-            #samples_indexes = np.arange(X.shape[0])
-            #columns_indexes = np.arange(X.shape[1])
-            dt = DecisionTreeRegressor(
+
+            base_model = DecisionTreeRegressor(
                 criterion=self.criterion, 
                 max_depth=self.max_depth, 
                 leafs_num=self.leafs_num, 
@@ -62,9 +58,9 @@ class RandomForestRegressor(BaseModel):
                 verbose=self.verbose
             )
 
-            dt.fit(X[samples_indexes][:,columns_indexes], y[samples_indexes])
+            base_model.fit(X[samples_indexes][:,columns_indexes], y[samples_indexes])
             self._ensemble.append(
-                dt
+                base_model
             )
 
     def predict(self, X):
@@ -78,6 +74,5 @@ class RandomForestRegressor(BaseModel):
             for estimator in self._ensemble:
                 ensemble_preds.append(estimator.predict(x))
 
-            #predictions.append(mode(ensemble_preds)[0][0])
             predictions.append(np.mean(ensemble_preds))
         return predictions
