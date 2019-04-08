@@ -55,6 +55,7 @@ class RandomForestRegressor(BaseModel):
                 max_objects_in_leaf_num=self.max_objects_in_leaf_num,
                 min_impurity_decrease=self.min_impurity_decrease, 
                 use_binning=self.use_binning,
+                use_rsm=True,
                 verbose=self.verbose
             )
 

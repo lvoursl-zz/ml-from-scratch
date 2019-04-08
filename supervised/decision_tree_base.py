@@ -18,6 +18,7 @@ class DecisionTreeBase(BaseModel):
         max_objects_in_leaf_num=-1,
         min_impurity_decrease=0, 
         use_binning=True,
+        use_rsm=False,
         verbose=False
     ):
         super(DecisionTreeBase, self).__init__(verbose)
@@ -26,6 +27,7 @@ class DecisionTreeBase(BaseModel):
         self.max_objects_in_leaf_num = max_objects_in_leaf_num
         self.min_impurity_decrease = min_impurity_decrease        
         self.use_binning = use_binning
+        self.use_rsm = use_rsm
         
         if leafs_num != -1:
             self.leafs_num = leafs_num
@@ -74,6 +76,9 @@ class DecisionTreeBase(BaseModel):
             return -1, -1, -1, -1, is_leaf, decision
 
         for j in range(self._features_num):
+            # little hack for Random Space Method
+            if self.use_rsm and np.random.random() > 1 / np.sqrt(self._features_num):
+                continue            
             if self._features_types[j] == NUMERICAL_KEY:
                 # hack to solve problems with binning when we
                 # have a small number of objects

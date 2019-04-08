@@ -11,6 +11,7 @@ class DecisionTreeRegressor(DecisionTreeBase):
         max_objects_in_leaf_num=-1,
         min_impurity_decrease=0, 
         use_binning=True,
+        use_rsm=False,
         verbose=False
     ):
         super(DecisionTreeRegressor, self).__init__(
@@ -20,6 +21,7 @@ class DecisionTreeRegressor(DecisionTreeBase):
             max_objects_in_leaf_num=max_objects_in_leaf_num,
             min_impurity_decrease=min_impurity_decrease,
             use_binning=use_binning,
+            use_rsm=use_rsm,
             verbose=verbose
         )
 
