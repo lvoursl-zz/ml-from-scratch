@@ -265,4 +265,4 @@ class DecisionTreeBase(BaseModel):
 
             predictions.append(current_node['decision'])
         
-        return predictions
+        return np.array(predictions)
