@@ -2,14 +2,14 @@ import numpy as np
 
 
 def reciprocal_rank(y_true, y_pred):
-    rank = 0
+    rank = 1
     y_true_ = set(y_true)
     for y_p in y_pred:
-        rank += 1
         if y_p in y_true_:
             break
+        rank += 1
 
-    if rank != len(y_true):
+    if rank <= len(y_true):
         return 1 / rank
     else:
         return 0

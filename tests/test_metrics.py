@@ -13,6 +13,13 @@ class RecommendationsMetricsTestCase(unittest.TestCase):
             0,
             reciprocal_rank([1, 2, 3], [0, 0, 0])
         )
+        self.assertEqual(
+            1 / 100,
+            reciprocal_rank(
+                [x for x in range(100)],
+                [-1 for _ in range(99)] + [99]
+            )
+        )
 
 
 if __name__ == '__main__':
