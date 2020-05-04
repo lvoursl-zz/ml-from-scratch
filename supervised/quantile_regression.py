@@ -24,16 +24,22 @@ class QuantileRegression(LinearRegression):
             biggest_or_equal = np.argwhere(residuals >= 0)[:, 0]
             smallest = np.argwhere(residuals < 0)[:, 0]
 
+            loss = (
+                    np.mean((self.quantile * np.abs(residuals[biggest_or_equal]).ravel()))
+                    + np.mean(((1 - self.quantile) * np.abs(residuals[smallest])).ravel())
+            )
+            self.loss.append(loss)
             if self.verbose:
                 print('Loss =', loss)
-            loss = np.mean((self.quantile * np.abs(residuals[biggest_or_equal]).ravel())) + np.mean(((1 - self.quantile) * np.abs(residuals[smallest])).ravel())
-            self.loss.append(loss)
 
-            dw = ((1 - self.quantile) * np.mean(X[smallest], axis=0).reshape(-1, 1) * np.mean(residuals[smallest], axis=0).reshape(-1, 1)) \
-                 + (self.quantile * np.mean(X[biggest_or_equal], axis=0).reshape(-1, 1) * np.mean(residuals[biggest_or_equal], axis=0).reshape(-1, 1))
-
-            db = ((1 - self.quantile) * np.mean(residuals[smallest], axis=0).reshape(-1, 1)) \
-                 + (self.quantile * np.mean(residuals[biggest_or_equal], axis=0).reshape(-1, 1))
+            dw = (
+                ((1 - self.quantile) * np.mean(X[smallest], axis=0).reshape(-1, 1) * np.mean(residuals[smallest], axis=0).reshape(-1, 1)) +
+                (self.quantile * np.mean(X[biggest_or_equal], axis=0).reshape(-1, 1) * np.mean(residuals[biggest_or_equal], axis=0).reshape(-1, 1))
+            )
+            db = (
+                ((1 - self.quantile) * np.mean(residuals[smallest], axis=0).reshape(-1, 1)) +
+                (self.quantile * np.mean(residuals[biggest_or_equal], axis=0).reshape(-1, 1))
+            )
 
             self.W -= self.learning_rate * dw
             self.b -= self.learning_rate * db
