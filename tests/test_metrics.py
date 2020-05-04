@@ -1,6 +1,8 @@
 import unittest
 
-from metrics.recommendations import *
+from metrics.recommendations import (
+    reciprocal_rank, mean_reciprocal_rank, ndcg, discounted_cumulative_gain
+)
 
 
 class RecommendationsMetricsTestCase(unittest.TestCase):
@@ -60,7 +62,6 @@ class RecommendationsMetricsTestCase(unittest.TestCase):
             places=2
         )
 
-
     def test_ndcg(self):
         self.assertAlmostEqual(
             0.948,
@@ -70,6 +71,7 @@ class RecommendationsMetricsTestCase(unittest.TestCase):
             ),
             places=2
         )
+
 
 if __name__ == '__main__':
     unittest.main()

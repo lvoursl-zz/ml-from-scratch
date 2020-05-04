@@ -2,6 +2,7 @@ import numpy as np
 
 MAX_LOSS = 2.0
 
+
 class WeightedApproxRankingMatrixFactorization(object):
     def __init__(
         self, users_num, items_num, 
